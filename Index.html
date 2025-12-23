@@ -1,537 +1,559 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
+  <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Internet Company | Interactive Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
     <style>
-        @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap");
-
-        body {
-            font-family: "Inter", sans-serif;
-            background-color: #080c14;
-            color: #f1f5f9;
-            overflow: hidden;
-            margin: 0;
-        }
-
-        .system-font {
-            font-family: "JetBrains Mono", monospace;
-        }
-
-        .glass-panel {
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #1e293b;
-            border-radius: 10px;
-        }
-
-        #formContainer {
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-            max-height: 2000px;
-            opacity: 1;
-        }
-        #formContainer.hidden-form {
-            max-height: 0;
-            opacity: 0;
-            overflow: hidden;
-            margin-bottom: 0;
-            padding: 0;
-        }
-
-        #notification-box {
-            position: fixed;
-            bottom: 50px;
-            right: 20px;
-            z-index: 100;
-            display: none;
-            animation: slideIn 0.3s ease-out;
-        }
-
-        @keyframes slideIn {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-
-        .row-warning {
-            background-color: rgba(239, 68, 68, 0.15) !important;
-            border-left: 4px solid #ef4444;
-        }
-        .row-warning:hover {
-            background-color: rgba(239, 68, 68, 0.25) !important;
-        }
-        
-        input {
-            transition: border-color 0.2s;
-        }
-
-        /* Modal Overlay */
-        #confirmModal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.8);
-            backdrop-filter: blur(4px);
-            z-index: 200;
-            align-items: center;
-            justify-content: center;
-        }
+      @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600;700&display=swap");
+      body { font-family: "Inter", sans-serif; background-color: #080c14; color: #f1f5f9; overflow: hidden; margin: 0; }
+      .system-font { font-family: "JetBrains Mono", monospace; }
+      .glass-panel { background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.05); }
+      ::-webkit-scrollbar { width: 6px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 10px; }
+      #formContainer { transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1); max-height: 1200px; opacity: 1; transform: translateY(0); }
+      #formContainer.hidden-form { max-height: 0; opacity: 0; transform: translateY(-20px); overflow: hidden; margin-bottom: 0; padding: 0; pointer-events: none; }
+      #notification-box { position: fixed; bottom: 50px; right: 20px; z-index: 100; display: none; animation: slideIn 0.3s ease-out; }
+      @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+      .row-expired { background-color: rgba(239, 68, 68, 0.15) !important; border-left: 4px solid #ef4444; }
+      .edit-input { background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(59, 130, 246, 0.5); color: white; padding: 4px 8px; border-radius: 6px; width: 100%; font-size: 11px; }
+      #confirmModal { display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(4px); z-index: 200; align-items: center; justify-content: center; }
+      #notiDropdown { display: none; position: absolute; top: 60px; right: 20px; width: 320px; max-height: 400px; overflow-y: auto; z-index: 1000; border: 1px solid rgba(59, 130, 246, 0.2); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5); }
     </style>
-</head>
-<body class="h-screen flex flex-col" onload="loadStoredData()">
-    <!-- NOTIFICATION -->
+  </head>
+  <body class="h-screen flex flex-col" onload="loadStoredData()">
+    <!-- NOTIFICATION POPUP -->
     <div id="notification-box" class="glass-panel p-4 rounded-xl border-blue-500/30 shadow-2xl min-w-[300px]">
-        <div class="flex items-center gap-3">
-            <i class="fas fa-info-circle text-blue-400"></i>
-            <span id="notification-text" class="text-xs system-font"></span>
-        </div>
+      <div class="flex items-center gap-3">
+        <i class="fas fa-info-circle text-blue-400"></i>
+        <span id="notification-text" class="text-xs system-font"></span>
+      </div>
     </div>
 
     <!-- CONFIRMATION MODAL -->
     <div id="confirmModal">
-        <div class="glass-panel p-8 rounded-3xl border-red-500/20 max-w-sm w-full mx-4 text-center">
-            <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
-            </div>
-            <h3 class="text-xl font-bold text-white mb-2">Clear All Data?</h3>
-            <p class="text-slate-400 text-sm mb-6">This action cannot be undone. All registry logs will be permanently deleted.</p>
-            <div class="flex gap-3">
-                <button onclick="closeModal()" class="flex-1 px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold uppercase tracking-widest hover:bg-slate-700 transition-all">Cancel</button>
-                <button onclick="confirmClearAll()" class="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold uppercase tracking-widest hover:bg-red-500 transition-all shadow-lg shadow-red-600/20">Delete All</button>
-            </div>
+      <div class="glass-panel p-8 rounded-3xl border-red-500/20 max-w-sm w-full mx-4 text-center">
+        <div class="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
         </div>
+        <h3 class="text-xl font-bold text-white mb-2">Delete All Data?</h3>
+        <p class="text-slate-400 text-sm mb-6">This action cannot be undone. All records will be permanently removed.</p>
+        <div class="flex gap-3">
+          <button onclick="closeModal()" class="flex-1 px-4 py-2 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold uppercase hover:bg-slate-700 transition-all">Cancel</button>
+          <button onclick="confirmClearAll()" class="flex-1 px-4 py-2 rounded-xl bg-red-600 text-white text-xs font-bold uppercase hover:bg-red-500 transition-all">Confirm</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- NOTIFICATION DROPDOWN (គ្មាន trash icon ទេ) -->
+    <div id="notiDropdown" class="glass-panel rounded-2xl p-4">
+      <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+        <span class="text-xs font-bold system-font uppercase text-blue-400">Alerts & Notifications</span>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleNoti()" class="text-slate-500 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+      </div>
+      <div id="notiList" class="space-y-3"></div>
     </div>
 
     <!-- TOP NAV -->
-    <header class="h-14 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-6 shrink-0">
-        <div class="flex items-center gap-6">
-            <div class="flex items-center gap-3">
-                <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
-                    <i class="fas fa-globe text-white text-sm"></i>
-                </div>
-                <div>
-                    <span class="system-font font-bold text-xs tracking-tighter uppercase block text-white">Internet Site Inclusion System</span>
-                    <span class="text-[9px] text-slate-500 system-font uppercase">Control_Hub_v1.0.8</span>
-                </div>
-            </div>
-        </div>
+    <header class="h-14 border-b border-slate-800 bg-slate-950 flex items-center justify-between px-6 shrink-0 relative">
+      <div class="flex items-center gap-6">
         <div class="flex items-center gap-3">
-            <label class="flex items-center gap-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase cursor-pointer transition-all active:scale-95">
-                <i class="fas fa-file-import"></i> Import CSV
-                <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importFromCSV(event)">
-            </label>
-            
-            <button onclick="exportToExcel()" class="flex items-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase transition-all active:scale-95">
-                <i class="fas fa-file-excel"></i> Export Excel
-            </button>
-            <div class="hidden md:block text-blue-400 font-bold bg-blue-950/40 px-4 py-1.5 rounded-lg border border-blue-500/20 system-font text-xs uppercase">
-                Active_Session
-            </div>
+          <div class="w-8 h-8 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-lg flex items-center justify-center">
+            <i class="fas fa-globe text-white text-sm"></i>
+          </div>
+          <div>
+            <span class="system-font font-bold text-xs tracking-tighter uppercase block text-white">Network Inclusion System</span>
+            <span class="text-[9px] text-slate-500 system-font uppercase">Control_Hub_v1.2.5</span>
+          </div>
         </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <div class="relative cursor-pointer hover:bg-slate-800 p-2 rounded-full transition-all" onclick="toggleNoti()">
+          <i class="fas fa-bell text-slate-400 text-lg"></i>
+          <span id="notiBadge" class="hidden absolute top-1 right-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full border-2 border-slate-950">0</span>
+        </div>
+        <label class="flex items-center gap-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase cursor-pointer transition-all">
+          <i class="fas fa-file-import"></i> Import CSV
+          <input type="file" id="csvFileInput" accept=".csv" class="hidden" onchange="importFromCSV(event)" />
+        </label>
+        <button onclick="exportToExcel()" class="flex items-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase transition-all">
+          <i class="fas fa-file-excel"></i> Export Excel
+        </button>
+      </div>
     </header>
 
     <div class="flex flex-1 overflow-hidden">
-        <main class="flex-1 overflow-hidden flex flex-col bg-[#05080f]">
-            <div class="flex-1 overflow-y-auto p-4 md:p-8">
-                <div class="max-w-[1600px] mx-auto space-y-10">
-                    
-                    <div id="formContainer">
-                        <div class="flex items-center justify-between mb-8">
-                            <div>
-                                <h1 class="text-2xl font-bold text-white tracking-tight">Node Setup Configuration</h1>
-                                <p class="text-xs text-slate-500 system-font uppercase tracking-widest mt-1">Input parameters for the system registry</p>
-                            </div>
-                            <button onclick="toggleForm()" class="text-slate-400 hover:text-white text-xs system-font bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-700 transition-all">
-                                <i class="fas fa-eye-slash mr-2"></i> Minimize
-                            </button>
-                        </div>
-
-                        <form id="entryForm" onsubmit="handleCommit(event)" class="space-y-6">
-                            <!-- Mandatory Section -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Site Name <span class="text-red-500">*</span></label>
-                                    <input type="text" id="siteName" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Location Name..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Internet Company <span class="text-red-500">*</span></label>
-                                    <input type="text" id="partner" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Organization..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Register Date <span class="text-red-500">*</span></label>
-                                    <input type="date" id="registerDate" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Expire Date <span class="text-red-500">*</span></label>
-                                    <input type="date" id="expireDate" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" />
-                                </div>
-                            </div>
-
-                            <!-- Network Details -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">IP Public</label>
-                                    <input type="text" id="ipPublic" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="0.0.0.0" />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Gateway</label>
-                                    <input type="text" id="gateway" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="0.0.0.0" />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">IP Private</label>
-                                    <input type="text" id="ipPrivate" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="192.168.x.x" />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Speed</label>
-                                    <input type="text" id="speed" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="e.g. 100Mbps" />
-                                </div>
-                            </div>
-
-                            <!-- Access Details -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">System ID</label>
-                                    <input type="text" id="entryId" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="ID..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Password</label>
-                                    <input type="text" id="password" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Password..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Subscription</label>
-                                    <input type="text" id="requestSubscript" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Monthly..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">User</label>
-                                    <input type="text" id="user" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Name..." />
-                                </div>
-                            </div>
-
-                            <!-- Wireless & Support -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Wireless SSID</label>
-                                    <input type="text" id="wirelessSsid" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="WiFi Name..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Wireless Password</label>
-                                    <input type="text" id="wirelessPass" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="WiFi Pass..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">User Device</label>
-                                    <input type="text" id="userDevice" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Router/PC..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Pas Devices</label>
-                                    <input type="text" id="pasDevices" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Peripheral..." />
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Hotline</label>
-                                    <input type="text" id="hotline" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Support #..." />
-                                </div>
-                            </div>
-
-                            <div class="flex justify-end pt-4">
-                                <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-12 rounded-2xl text-xs transition-all uppercase tracking-[0.3em] flex items-center gap-4 shadow-xl shadow-blue-600/20 active:scale-95 w-full md:w-auto justify-center">
-                                    Commit Entry <i class="fas fa-plus-circle"></i>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-
-                    <div class="space-y-6">
-                        <div class="flex items-center justify-between px-2">
-                            <h2 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-3">
-                                <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-                                Registry Logs
-                            </h2>
-                            <div class="flex gap-3">
-                                <button onclick="openClearModal()" class="text-red-400 hover:text-white text-[10px] system-font border border-red-500/20 px-4 py-2 rounded-xl bg-red-500/5 uppercase transition-all">
-                                    <i class="fas fa-trash-sweep mr-2"></i> Clear All
-                                </button>
-                                <button id="showTerminalBtn" onclick="toggleForm()" class="hidden text-blue-400 hover:text-white text-[10px] system-font border border-blue-500/20 px-4 py-2 rounded-xl bg-blue-500/5 uppercase transition-all">
-                                    <i class="fas fa-edit mr-2"></i> Open Configuration
-                                </button>
-                            </div>
-                        </div>
-                        <div class="glass-panel rounded-3xl border-slate-800/40 overflow-hidden shadow-2xl">
-                            <div class="overflow-x-auto">
-                                <table id="mainTable" class="w-full text-left whitespace-nowrap">
-                                    <thead class="bg-slate-900/50 border-b border-slate-800/50 text-slate-500 system-font uppercase text-[9px] tracking-widest">
-                                        <tr>
-                                            <th class="px-4 py-4 w-12 text-center">NO</th>
-                                            <th class="px-4 py-4">Site Name</th>
-                                            <th class="px-4 py-4">Company</th>
-                                            <th class="px-4 py-4">Reg Date</th>
-                                            <th class="px-4 py-4">Exp Date</th>
-                                            <th class="px-4 py-4">Subscription</th>
-                                            <th class="px-4 py-4">User</th>
-                                            <th class="px-4 py-4">Password</th>
-                                            <th class="px-4 py-4">Public IP</th>
-                                            <th class="px-4 py-4">Gateway</th>
-                                            <th class="px-4 py-4">Private IP</th>
-                                            <th class="px-4 py-4">System ID</th>
-                                            <th class="px-4 py-4">Speed</th>
-                                            <th class="px-4 py-4">Wireless SSID</th>
-                                            <th class="px-4 py-4">Wireless Pass</th>
-                                            <th class="px-4 py-4">User Device</th>
-                                            <th class="px-4 py-4">Pas Devices</th>
-                                            <th class="px-4 py-4">Hotline</th>
-                                            <th class="px-4 py-4 text-center">Action</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tableBody" class="divide-y divide-slate-800/30 text-[11px]"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+      <main class="flex-1 overflow-hidden flex flex-col bg-[#05080f]">
+        <div class="flex-1 overflow-y-auto p-4 md:p-8">
+          <div class="max-w-[1600px] mx-auto space-y-10">
+            <!-- CONFIGURATION FORM SECTION -->
+            <div>
+              <div class="flex items-center justify-between mb-8">
+                <div>
+                  <h1 class="text-2xl font-bold text-white tracking-tight">Configuration Setup</h1>
+                  <p class="text-xs text-slate-500 system-font uppercase tracking-widest mt-1">បញ្ចូលព័ត៌មានថ្មីទៅក្នុងប្រព័ន្ធ</p>
                 </div>
+                <button id="toggleBtn" onclick="toggleForm()" class="flex items-center gap-3 px-6 py-2.5 rounded-xl border border-slate-700 bg-slate-800/50 text-slate-300 text-xs system-font hover:bg-slate-700 hover:text-white transition-all">
+                  <span id="toggleText">Hide Form</span>
+                  <i id="toggleIcon" class="fas fa-eye-slash"></i>
+                </button>
+              </div>
+              <div id="formContainer">
+                <form id="entryForm" onsubmit="handleCommit(event)" class="space-y-6">
+                  <!-- Row 1 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Site Name</label><input type="text" id="siteName" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="Site Name" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Provider / Company</label><input type="text" id="partner" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" placeholder="ISP Company" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Register Date</label><input type="date" id="registerDate" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Expiration Date</label><input type="date" id="expireDate" required class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none focus:border-blue-500" /></div>
+                  </div>
+                  <!-- Row 2 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Public IP</label><input type="text" id="ipPublic" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" placeholder="0.0.0.0" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Gateway</label><input type="text" id="gateway" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" placeholder="0.0.0.0" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Private IP</label><input type="text" id="ipPrivate" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" placeholder="192.168.x.x" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Speed Bandwidth</label><input type="text" id="speed" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" placeholder="e.g. 50Mbps" /></div>
+                  </div>
+                  <!-- Row 3 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">System ID</label><input type="text" id="entryId" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Account Password</label><input type="text" id="password" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Subscription Type</label><input type="text" id="requestSubscript" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">User / Admin</label><input type="text" id="user" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                  </div>
+                  <!-- Row 4 -->
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 text-xs">
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">WiFi SSID</label><input type="text" id="wirelessSsid" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">WiFi Pass</label><input type="text" id="wirelessPass" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">User Device</label><input type="text" id="userDevice" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Pas Devices</label><input type="text" id="pasDevices" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                    <div><label class="block text-[10px] system-font text-slate-400 uppercase mb-2">Support Hotline</label><input type="text" id="hotline" class="w-full px-4 py-3 bg-slate-900/50 border border-slate-800 rounded-xl text-white focus:outline-none" /></div>
+                  </div>
+                  <div class="flex justify-end pt-4">
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-500 text-white font-bold py-4 px-12 rounded-2xl text-xs transition-all uppercase tracking-[0.2em] flex items-center gap-4 shadow-xl shadow-blue-600/20 w-full md:w-auto justify-center">
+                      Submit Entry <i class="fas fa-plus-circle"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
             </div>
 
-            <div class="h-10 bg-slate-950 border-t border-slate-800 flex items-center px-8 justify-between text-[9px] system-font text-slate-500 uppercase tracking-widest">
-                <span id="record-count">Records: 0</span>
-                <div id="footer-time">00:00:00</div>
+            <!-- REGISTRY TABLE SECTION -->
+            <div class="space-y-6">
+              <div class="flex items-center justify-between px-2">
+                <h2 class="text-sm font-bold text-white tracking-widest uppercase flex items-center gap-3">
+                  <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Registry Logs
+                </h2>
+                <div class="flex gap-3">
+                  <button onclick="openClearModal()" class="text-red-400 hover:text-white text-[10px] system-font border border-red-500/20 px-4 py-2 rounded-xl bg-red-500/5 uppercase transition-all">
+                    <i class="fas fa-trash-sweep mr-2"></i> Clear Records
+                  </button>
+                </div>
+              </div>
+              <div class="glass-panel rounded-3xl border-slate-800/40 overflow-hidden shadow-2xl">
+                <div class="overflow-x-auto">
+                  <table id="mainTable" class="w-full text-left whitespace-nowrap">
+                    <thead class="bg-slate-900/50 border-b border-slate-800/50 text-slate-500 system-font uppercase text-[9px] tracking-widest">
+                      <tr>
+                        <th class="px-4 py-4 w-12 text-center">NO</th>
+                        <th class="px-4 py-4">Site Name</th>
+                        <th class="px-4 py-4">Provider</th>
+                        <th class="px-4 py-4">Reg Date</th>
+                        <th class="px-4 py-4">Exp Date</th>
+                        <th class="px-4 py-4">Subscription</th>
+                        <th class="px-4 py-4">User</th>
+                        <th class="px-4 py-4">Password</th>
+                        <th class="px-4 py-4">Public IP</th>
+                        <th class="px-4 py-4">Gateway</th>
+                        <th class="px-4 py-4">Private IP</th>
+                        <th class="px-4 py-4">System ID</th>
+                        <th class="px-4 py-4">Speed</th>
+                        <th class="px-4 py-4">SSID</th>
+                        <th class="px-4 py-4">WiFi Pass</th>
+                        <th class="px-4 py-4">User Device</th>
+                        <th class="px-4 py-4">Pas Device</th>
+                        <th class="px-4 py-4">Hotline</th>
+                        <th class="px-4 py-4 text-center">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody id="tableBody" class="divide-y divide-slate-800/30 text-[11px]"></tbody>
+                  </table>
+                </div>
+              </div>
             </div>
-        </main>
+          </div>
+        </div>
+        <div class="h-10 bg-slate-950 border-t border-slate-800 flex items-center px-8 justify-between text-[9px] system-font text-slate-500 uppercase tracking-widest">
+          <span id="record-count">Total Records: 0</span>
+          <div id="footer-time">00:00:00</div>
+        </div>
+      </main>
     </div>
 
     <script>
-        const STORAGE_KEY = 'site_registry_data_v2';
-        const FIELDS = [
-            'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
-            'user', 'password', 'ipPublic', 'gateway', 'ipPrivate', 
-            'entryId', 'speed', 'wirelessSsid', 'wirelessPass', 'userDevice', 'pasDevices', 'hotline'
+      const STORAGE_KEY = "site_registry_data_v2";
+      const FIELDS = ["siteName","partner","registerDate","expireDate","requestSubscript","user","password","ipPublic","gateway","ipPrivate","entryId","speed","wirelessSsid","wirelessPass","userDevice","pasDevices","hotline"];
+
+      const TELEGRAM_TOKEN = "8228223432:AAFbVl-rjxoaRq44L0oUufui3HpBtAmQzMo";
+      const TELEGRAM_CHAT_ID = "6073285483";
+
+      function updateTime() {
+        document.getElementById("footer-time").innerText = new Date().toLocaleTimeString("en-GB");
+      }
+      setInterval(updateTime, 1000);
+
+      function showNotification(msg) {
+        const box = document.getElementById("notification-box");
+        const txt = document.getElementById("notification-text");
+        txt.innerText = msg;
+        box.style.display = "block";
+        setTimeout(() => box.style.display = "none", 4000);
+      }
+
+      function getStoredData() {
+        const data = localStorage.getItem(STORAGE_KEY);
+        return data ? JSON.parse(data) : [];
+      }
+
+      function saveToStorage(dataArray) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(dataArray));
+        document.getElementById("record-count").innerText = `Total Records: ${dataArray.length}`;
+        updateNotifications(dataArray);
+      }
+
+      function appendRowToTable(data, rowNumber) {
+        const tableBody = document.getElementById("tableBody");
+        const today = new Date(); today.setHours(0,0,0,0);
+        const expDate = new Date(data.expireDate); expDate.setHours(0,0,0,0);
+        const diffDays = Math.ceil((expDate - today) / (1000*60*60*24));
+        const isExpired = diffDays <= 0;
+        const row = document.createElement("tr");
+        row.dataset.id = data.timestamp;
+        row.className = isExpired ? "row-expired group" : "hover:bg-slate-800/20 group";
+
+        const noCell = document.createElement("td");
+        noCell.className = "px-4 py-4 text-center system-font opacity-40 font-bold";
+        noCell.innerText = rowNumber;
+        row.appendChild(noCell);
+
+        FIELDS.forEach(key => {
+          const cell = document.createElement("td");
+          cell.className = "px-4 py-4 system-font text-slate-300 data-cell";
+          cell.dataset.key = key;
+          const val = data[key] || "";
+          if (key === "siteName") cell.innerHTML = `<span class="${isExpired ? "text-red-400" : "text-white"} font-bold">${val || "-"}</span>`;
+          else if (key === "hotline") cell.innerHTML = `<span class="text-amber-400 font-semibold">${val || "-"}</span>`;
+          else cell.innerText = val || "-";
+          row.appendChild(cell);
+        });
+
+        const actionCell = document.createElement("td");
+        actionCell.className = "px-4 py-4 text-center flex items-center justify-center gap-1";
+        actionCell.innerHTML = `
+          <button onclick="toggleEdit(this)" class="edit-btn text-slate-500 hover:text-blue-400 transition-colors p-2" title="Edit"><i class="fas fa-edit"></i></button>
+          <button onclick="removeRow(this)" class="delete-btn text-slate-500 hover:text-red-500 transition-colors p-2" title="Delete"><i class="fas fa-trash-alt"></i></button>
+        `;
+        row.appendChild(actionCell);
+        tableBody.appendChild(row);
+      }
+
+      async function sendToTelegram(text) {
+        const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
+        try {
+          const res = await fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ chat_id: TELEGRAM_CHAT_ID, text, parse_mode: "HTML" })
+          });
+          const data = await res.json();
+          if (data.ok) {
+            showNotification("ផ្ញើទៅ Telegram ជោគជ័យ!");
+            return true;
+          } else {
+            showNotification("បញ្ហា Telegram: " + (data.description || "Unknown"));
+            return false;
+          }
+        } catch (err) {
+          showNotification("មិនអាចភ្ជាប់ Telegram បាន។");
+          return false;
+        }
+      }
+
+      async function autoSendAlertsIfNeeded() {
+        const lastSentDate = localStorage.getItem("last_telegram_alert_date");
+        const today = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
+
+        // បើជាថ្ងៃដដែល មិនផ្ញើទេ (ទោះ alert ដូចគ្នា)
+        if (lastSentDate === today) return;
+
+        const data = getStoredData();
+        const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+        const alerts = [];
+
+        data.forEach(item => {
+          if (!item.expireDate) return;
+          const exp = new Date(item.expireDate); exp.setHours(0,0,0,0);
+          const days = Math.ceil((exp - todayDate) / 86400000);
+          let status = "";
+          if (days <= 0) status = "RECORD EXPIRED 🔥";
+          else if (days <= 7) status = `Expires in ${days} days ⚠️`;
+          else if (days <= 14) status = `Expires in ${days} days ⏰`;
+          if (status) alerts.push(`• <b>${item.siteName}</b>: ${status} (Exp: ${item.expireDate})`);
+        });
+
+        if (alerts.length > 0) {
+          const msg = `<b>🔔 ព្រមានការផុតកំណត់សេវា (${alerts.length} ករណី)</b>\n\n` + alerts.join("\n");
+          const success = await sendToTelegram(msg);
+          if (success) localStorage.setItem("last_telegram_alert_date", today);
+        }
+      }
+
+      function updateNotifications(data) {
+        const notiList = document.getElementById("notiList");
+        const notiBadge = document.getElementById("notiBadge");
+        notiList.innerHTML = "";
+        const todayDate = new Date(); todayDate.setHours(0,0,0,0);
+        let count = 0;
+        const alerts = [];
+
+        data.forEach(item => {
+          if (!item.expireDate) return;
+          const exp = new Date(item.expireDate); exp.setHours(0,0,0,0);
+          const days = Math.ceil((exp - todayDate) / 86400000);
+          let message = "", level = "";
+          if (days <= 14 && days >= 12) { message = `Expires in ${days} days`; level = "text-blue-400"; }
+          else if (days <= 7 && days > 0) { message = `Expires in ${days} days`; level = "text-amber-500"; }
+          else if (days <= 0) { message = "RECORD EXPIRED"; level = "text-red-500"; }
+          if (message) {
+            count++;
+            alerts.push({ siteName: item.siteName, expireDate: item.expireDate, message, level });
+          }
+        });
+
+        if (count === 0) {
+          notiBadge.classList.add("hidden");
+          notiList.innerHTML = `<div class="text-center py-6 text-slate-600 text-[10px] italic">No active alerts at this time.</div>`;
+          return;
+        }
+
+        alerts.sort((a,b) => new Date(a.expireDate) - new Date(b.expireDate));
+        alerts.forEach(alert => {
+          const div = document.createElement("div");
+          div.className = "bg-slate-900/50 p-3 rounded-xl border border-slate-800 hover:border-slate-600 transition-all group";
+          div.innerHTML = `
+            <div class="flex-1">
+              <div class="flex justify-between items-start">
+                <span class="text-[11px] font-bold text-white">${alert.siteName}</span>
+                <span class="text-[9px] ${alert.level} font-black uppercase tracking-tighter">${alert.message}</span>
+              </div>
+              <div class="text-[9px] text-slate-500 system-font">Exp: ${alert.expireDate}</div>
+            </div>
+          `;
+          notiList.appendChild(div);
+        });
+        notiBadge.innerText = count;
+        notiBadge.classList.remove("hidden");
+
+        autoSendAlertsIfNeeded();
+      }
+
+      function toggleNoti() {
+        const drop = document.getElementById("notiDropdown");
+        drop.style.display = drop.style.display === "block" ? "none" : "block";
+      }
+
+      function loadStoredData() {
+        const data = getStoredData();
+        const tableBody = document.getElementById("tableBody");
+        tableBody.innerHTML = "";
+        document.getElementById("record-count").innerText = `Total Records: ${data.length}`;
+        if (data.length === 0) {
+          tableBody.innerHTML = `<tr id="emptyRow"><td colspan="19" class="p-20 text-center text-slate-600 italic system-font">No records found in the database.</td></tr>`;
+        } else {
+          const sorted = data.slice().sort((a, b) => b.timestamp - a.timestamp);
+          sorted.forEach((item, index) => appendRowToTable(item, index + 1));
+        }
+        updateNotifications(data);
+      }
+
+      async function exportToExcel() {
+        const data = getStoredData();
+        if (data.length === 0) return showNotification("No data to export.");
+        showNotification("Generating Excel Report...");
+        const workbook = new ExcelJS.Workbook();
+        const worksheet = workbook.addWorksheet("Network Registry");
+        worksheet.columns = [
+          { header: "NO", key: "no", width: 8 },
+          { header: "Site Name", key: "siteName", width: 25 },
+          { header: "Provider", key: "partner", width: 20 },
+          { header: "Reg Date", key: "registerDate", width: 15 },
+          { header: "Exp Date", key: "expireDate", width: 15 },
+          { header: "Subscription", key: "requestSubscript", width: 15 },
+          { header: "User", key: "user", width: 15 },
+          { header: "Password", key: "password", width: 15 },
+          { header: "Public IP", key: "ipPublic", width: 18 },
+          { header: "Gateway", key: "gateway", width: 18 },
+          { header: "Private IP", key: "ipPrivate", width: 18 },
+          { header: "System ID", key: "entryId", width: 15 },
+          { header: "Speed", key: "speed", width: 12 },
+          { header: "WiFi SSID", key: "wirelessSsid", width: 20 },
+          { header: "WiFi Pass", key: "wirelessPass", width: 20 },
+          { header: "User Device", key: "userDevice", width: 20 },
+          { header: "Pas Device", key: "pasDevices", width: 20 },
+          { header: "Hotline", key: "hotline", width: 15 },
         ];
+        const headerRow = worksheet.getRow(1);
+        headerRow.eachCell((cell) => {
+          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF1E293B" } };
+          cell.font = { color: { argb: "FFFFFFFF" }, bold: true };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        });
+        const sorted = data.slice().sort((a, b) => b.timestamp - a.timestamp);
+        sorted.forEach((item, index) => {
+          const row = worksheet.addRow({ no: index + 1, ...item });
+          const today = new Date(); today.setHours(0,0,0,0);
+          const expDate = new Date(item.expireDate);
+          if (expDate <= today) {
+            row.eachCell((cell) => {
+              cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFEE2E2" } };
+              cell.font = { color: { argb: "FFB91C1C" } };
+            });
+          }
+        });
+        const buffer = await workbook.xlsx.writeBuffer();
+        saveAs(new Blob([buffer]), `Registry_Export_${new Date().toISOString().split("T")[0]}.xlsx`);
+        showNotification("Excel File Downloaded.");
+      }
 
-        function updateTime() {
-            document.getElementById("footer-time").innerText = new Date().toLocaleTimeString("en-GB");
+      function handleCommit(e) {
+        e.preventDefault();
+        const formData = { timestamp: Date.now() };
+        FIELDS.forEach(id => {
+          const el = document.getElementById(id);
+          if (el) formData[id] = el.value.trim();
+        });
+        const currentData = getStoredData();
+        currentData.push(formData);
+        saveToStorage(currentData);
+        loadStoredData();
+        showNotification("Record saved successfully.");
+        e.target.reset();
+      }
+
+      function removeRow(btn) {
+        const row = btn.closest("tr");
+        const rowId = parseInt(row.dataset.id);
+        let currentData = getStoredData();
+        currentData = currentData.filter(item => item.timestamp !== rowId);
+        saveToStorage(currentData);
+        loadStoredData();
+        showNotification("Entry removed.");
+      }
+
+      function toggleForm() {
+        const form = document.getElementById("formContainer");
+        const btn = document.getElementById("toggleBtn");
+        const txt = document.getElementById("toggleText");
+        const icon = document.getElementById("toggleIcon");
+        const isHidden = form.classList.toggle("hidden-form");
+        if (isHidden) {
+          txt.innerText = "Show Form";
+          icon.className = "fas fa-eye";
+          btn.classList.replace("bg-slate-800/50", "bg-blue-600/20");
+          btn.classList.replace("text-slate-300", "text-blue-400");
+          btn.classList.add("border-blue-500/30");
+        } else {
+          txt.innerText = "Hide Form";
+          icon.className = "fas fa-eye-slash";
+          btn.classList.replace("bg-blue-600/20", "bg-slate-800/50");
+          btn.classList.replace("text-blue-400", "text-slate-300");
+          btn.classList.remove("border-blue-500/30");
         }
-        setInterval(updateTime, 1000);
+      }
 
-        function showNotification(msg) {
-            const box = document.getElementById('notification-box');
-            const txt = document.getElementById('notification-text');
-            txt.innerText = msg;
-            box.style.display = 'block';
-            setTimeout(() => { box.style.display = 'none'; }, 3000);
-        }
+      function openClearModal() {
+        if (getStoredData().length === 0) return showNotification("Database is already empty.");
+        document.getElementById("confirmModal").style.display = "flex";
+      }
 
-        function openClearModal() {
-            const data = getStoredData();
-            if (data.length === 0) {
-                showNotification("No data to clear.");
-                return;
-            }
-            document.getElementById('confirmModal').style.display = 'flex';
-        }
+      function closeModal() {
+        document.getElementById("confirmModal").style.display = "none";
+      }
 
-        function closeModal() {
-            document.getElementById('confirmModal').style.display = 'none';
-        }
+      function confirmClearAll() {
+        saveToStorage([]);
+        localStorage.removeItem("last_telegram_alert_date");
+        loadStoredData();
+        closeModal();
+        showNotification("All records cleared.");
+      }
 
-        function confirmClearAll() {
-            saveToStorage([]);
+      function importFromCSV(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          const lines = e.target.result.split("\n");
+          const newEntries = [];
+          for (let i = 1; i < lines.length; i++) {
+            const values = lines[i].split(",");
+            if (values.length < 2) continue;
+            const entry = { timestamp: Date.now() + i };
+            FIELDS.forEach((key, idx) => {
+              entry[key] = (values[idx] || "").replace(/"/g, "").trim();
+            });
+            newEntries.push(entry);
+          }
+          if (newEntries.length > 0) {
+            saveToStorage([...getStoredData(), ...newEntries]);
             loadStoredData();
-            closeModal();
-            showNotification("Registry cleared.");
-        }
+            showNotification(`Imported ${newEntries.length} items successfully.`);
+          }
+        };
+        reader.readAsText(file);
+      }
 
-        function exportToExcel() {
-            const data = getStoredData();
-            if (data.length === 0) {
-                showNotification("No records found.");
-                return;
-            }
-
-            let html = `
-                <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-                <head>
-                    <meta charset="UTF-8">
-                    <style>
-                        table { border-collapse: collapse; }
-                        th { background-color: #1e293b; color: #ffffff; font-weight: bold; border: 1px solid #000; padding: 8px; font-family: sans-serif; }
-                        td { border: 1px solid #000; padding: 8px; font-family: sans-serif; }
-                        .warning { background-color: #fecaca; color: #991b1b; }
-                    </style>
-                </head>
-                <body>
-                    <table>
-                        <thead>
-                            <tr><th>NO</th>${FIELDS.map(f => `<th>${f}</th>`).join('')}</tr>
-                        </thead>
-                        <tbody>
-            `;
-
-            data.slice().sort((a,b) => b.timestamp - a.timestamp).forEach((item, index) => {
-                const regDate = new Date(item.registerDate);
-                const expDate = new Date(item.expireDate);
-                const isWarning = regDate >= expDate;
-                html += `<tr ${isWarning ? 'class="warning"' : ''}>`;
-                html += `<td>${index + 1}</td>`;
-                FIELDS.forEach(field => {
-                    html += `<td>${item[field] || ''}</td>`;
-                });
-                html += `</tr>`;
-            });
-
-            html += `</tbody></table></body></html>`;
-
-            const blob = new Blob([html], { type: 'application/vnd.ms-excel' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `Network_Logs_${new Date().toISOString().split('T')[0]}.xls`;
-            link.click();
-            showNotification("Excel exported.");
-        }
-
-        function importFromCSV(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const lines = text.split('\n');
-                const newEntries = [];
-                for (let i = 1; i < lines.length; i++) {
-                    const rowText = lines[i].trim();
-                    if (!rowText) continue;
-                    const values = rowText.split(',');
-                    const entry = { timestamp: Date.now() + i };
-                    FIELDS.forEach((key, index) => { 
-                        let val = values[index] ? values[index].replace(/"/g, "").trim() : "";
-                        if (key === 'user') {
-                            const lowercaseVal = val.toLowerCase();
-                            if (!val || lowercaseVal === 'null' || val === '-') {
-                                entry[key] = "";
-                            } else {
-                                entry[key] = val;
-                            }
-                        } else {
-                            entry[key] = val;
-                        }
-                    });
-                    newEntries.push(entry);
-                }
-                if (newEntries.length > 0) {
-                    const currentData = getStoredData();
-                    saveToStorage([...currentData, ...newEntries]);
-                    loadStoredData();
-                    showNotification(`Imported ${newEntries.length} records.`);
-                }
-            };
-            reader.readAsText(file);
-            event.target.value = '';
-        }
-
-        function getStoredData() {
-            const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : [];
-        }
-
-        function saveToStorage(dataArray) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(dataArray));
-            document.getElementById('record-count').innerText = `Records: ${dataArray.length}`;
-        }
-
-        function loadStoredData() {
-            const data = getStoredData();
-            const tableBody = document.getElementById("tableBody");
-            tableBody.innerHTML = '';
-            document.getElementById('record-count').innerText = `Records: ${data.length}`;
-            if (data.length === 0) {
-                tableBody.innerHTML = `<tr id="emptyRow"><td colspan="19" class="p-20 text-center text-slate-600 italic system-font">No logs available.</td></tr>`;
-                return;
-            }
-            // Sort to show newest at top
-            const sorted = data.slice().sort((a,b) => b.timestamp - a.timestamp);
-            sorted.forEach((item, index) => { 
-                appendRowToTable(item, index + 1); 
-            });
-        }
-
-        function appendRowToTable(data, rowNumber) {
-            const tableBody = document.getElementById("tableBody");
-            const emptyRow = document.getElementById("emptyRow");
-            if (emptyRow) emptyRow.remove();
-
-            const regDate = new Date(data.registerDate);
-            const expDate = new Date(data.expireDate);
-            const isWarning = regDate >= expDate;
-
-            const row = document.createElement("tr");
-            row.dataset.id = data.timestamp;
-            row.className = isWarning ? "row-warning text-red-300 group" : "hover:bg-slate-800/20 text-slate-300 group";
-            
-            // NO Column
-            const noCell = document.createElement("td");
-            noCell.className = "px-4 py-4 text-center system-font opacity-40 font-bold";
-            noCell.innerText = rowNumber;
-            row.appendChild(noCell);
-
-            FIELDS.forEach(key => {
-                const cell = document.createElement("td");
-                cell.className = "px-4 py-4 system-font";
-                const rawVal = data[key];
-                const val = (rawVal === undefined || rawVal === null || rawVal === '') ? (key === 'user' ? '' : '-') : rawVal;
-
-                if (key === 'siteName') cell.innerHTML = `<span class="${isWarning ? 'text-red-400' : 'text-white'} font-bold">${val}</span>`;
-                else if (key === 'hotline') cell.innerHTML = `<span class="text-amber-400 font-semibold">${val}</span>`;
-                else cell.innerText = val;
-                row.appendChild(cell);
-            });
-
-            const actionCell = document.createElement("td");
-            actionCell.className = "px-4 py-4 text-center";
-            actionCell.innerHTML = `<button onclick="removeRow(this)" class="text-slate-600 hover:text-red-500 transition-colors p-2"><i class="fas fa-trash-alt"></i></button>`;
-            row.appendChild(actionCell);
-            
-            tableBody.appendChild(row);
-        }
-
-        function handleCommit(e) {
-            e.preventDefault();
-            const formData = { timestamp: Date.now() };
-            FIELDS.forEach(id => {
-                const el = document.getElementById(id);
-                if (el) formData[id] = el.value;
-            });
-            const currentData = getStoredData();
-            currentData.push(formData);
+      function toggleEdit(btn) {
+        const row = btn.closest("tr");
+        const isEditing = row.classList.contains("is-editing");
+        const rowId = parseInt(row.dataset.id);
+        if (!isEditing) {
+          row.classList.add("is-editing");
+          btn.innerHTML = `<i class="fas fa-save"></i>`;
+          btn.classList.replace("text-slate-500", "text-green-500");
+          row.querySelector(".delete-btn").style.display = "none";
+          row.querySelectorAll(".data-cell").forEach(cell => {
+            const key = cell.dataset.key;
+            const currentVal = cell.innerText === "-" ? "" : cell.innerText;
+            const input = document.createElement("input");
+            input.type = key.includes("Date") ? "date" : "text";
+            input.className = "edit-input";
+            input.value = currentVal;
+            cell.innerHTML = "";
+            cell.appendChild(input);
+          });
+        } else {
+          const newData = { timestamp: rowId };
+          row.querySelectorAll(".data-cell").forEach(cell => {
+            const key = cell.dataset.key;
+            newData[key] = cell.querySelector("input").value;
+          });
+          const currentData = getStoredData();
+          const index = currentData.findIndex(item => item.timestamp === rowId);
+          if (index !== -1) {
+            currentData[index] = { ...currentData[index], ...newData };
             saveToStorage(currentData);
-            loadStoredData();
-            showNotification("Record saved.");
-            e.target.reset();
+          }
+          loadStoredData();
         }
-
-        function removeRow(btn) {
-            const row = btn.closest('tr');
-            const rowId = parseInt(row.dataset.id);
-            let currentData = getStoredData();
-            currentData = currentData.filter(item => item.timestamp !== rowId);
-            saveToStorage(currentData);
-            loadStoredData(); // Reload to update row numbers
-            showNotification("Record purged.");
-        }
-
-        function toggleForm() {
-            const form = document.getElementById("formContainer");
-            const showBtn = document.getElementById("showTerminalBtn");
-            const isHidden = form.classList.toggle("hidden-form");
-            showBtn.classList.toggle("hidden", !isHidden);
-        }
+      }
     </script>
-</body>
+  </body>
 </html>
