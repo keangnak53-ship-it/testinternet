@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 
 exports.handler = async function (event, context) {
   const pool = new Pool({
-    connectionString: process.env.NETLIFY_DATABASE_URL_UNPOOLED,
+    connectionString: process.env.DATABASE_URL,
   });
 
   try {
