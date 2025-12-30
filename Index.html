@@ -258,6 +258,8 @@
   </div>
 
   <script>
+    // បន្ថែមនៅខាងលើ function ទាំងអស់ (នៅក្នុង <script>)
+const API_BASE = "/.netlify/functions";
   const FIELDS = [
     "siteName", "partner", "registerDate", "expireDate", "requestSubscript",
     "user", "password", "ipPublic", "gateway", "ipPrivate", "entryId",
@@ -309,7 +311,7 @@ async function sendToTelegram(message) {
   async function loadFromAPI() {
     try {
       // GET
-      const res = await fetch("/api/registry");
+      const res = await fetch("/.netlify/functions/api-registry");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       allData = Array.isArray(data) ? data : [];
@@ -505,7 +507,7 @@ function addToNotiList(message, colorClass = "text-white") {
 
     try {
       // POST
-const res = await fetch("/api/registry", {
+      await fetch("/.netlify/functions/api-registry", {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(formData)
@@ -546,7 +548,7 @@ const res = await fetch("/api/registry", {
         }
 
         for (const entry of newEntries) {
-          await fetch("/api/registry", {
+          await fetch("/.netlify/functions/api-registry", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(entry)
