@@ -4,7 +4,7 @@ exports.handler = async (event, context) => {
   console.log('Function invoked with method:', event.httpMethod);
 
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: process.env.NETLIFY_DATABASE_URL_UNPOOLED,
   });
 
   try {
