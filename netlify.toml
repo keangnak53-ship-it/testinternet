@@ -1,12 +1,19 @@
+# netlify.toml - កែ syntax ឲ្យត្រឹមត្រូវសម្រាប់ scheduled functions
+
+[build]
+  publish = "."  # បើ project របស់អ្នកជា static site
+  command = ""   # បើមិនមាន build command អាចទុកទទេ
+
 [functions]
-  node_bundler = "esbuild"
-  directory = "netlify/functions"
+  directory = "netlify/functions"   # folder ដែលមាន check-expirations.js
 
 [[functions]]
-  from = "netlify/functions/check-expirations.js"
-  to = "check-expirations"
+  path = "/api/*"                    # បើមាន API endpoints ផ្សេង បន្ថែមបាន
+  included_files = ["netlify/functions/**"]
 
+# Scheduled function (cron job)
 [[scheduled_functions]]
-  from = "netlify/functions/check-expirations.js"
-  to = "check-expirations"
-  cron = "0 8 * * *"
+  name = "check-expirations"
+  path = "/.netlify/functions/check-expirations"
+  cron = "0 8 * * *"  # រត់រាល់ថ្ងៃម៉ោង 8:00 AM UTC
+                      # ប្តូរបាន ឧ. "0 * * * *" សម្រាប់រាល់ម៉ោង (សាកល្បង)
