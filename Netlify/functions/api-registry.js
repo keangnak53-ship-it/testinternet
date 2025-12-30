@@ -1,15 +1,17 @@
 const { Pool } = require('pg');
 
 exports.handler = async (event, context) => {
+  console.log('Function invoked with method:', event.httpMethod);
+
   const pool = new Pool({
     connectionString: process.env.DATABASE_URL,
   });
 
   try {
-    // GET: ទាញទិន្នន័យទាំងអស់
     if (event.httpMethod === 'GET') {
+      console.log('GET request - fetching registry data');
       const res = await pool.query('SELECT * FROM registry ORDER BY timestamp DESC');
-      console.log('GET success - rows found:', res.rows.length);
+      console.log('GET success - found rows:', res.rows.length);
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -17,10 +19,10 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // POST: បញ្ចូល record ថ្មី
     if (event.httpMethod === 'POST') {
+      console.log('POST request - inserting new record');
       const data = JSON.parse(event.body);
-      console.log('POST received:', data);
+      console.log('POST data:', data);
 
       const fields = [
         'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
@@ -46,7 +48,7 @@ exports.handler = async (event, context) => {
       const params = [Date.now(), ...values];
       const result = await pool.query(queryText, params);
 
-      console.log('POST insert success');
+      console.log('POST insert success - new timestamp:', result.rows[0].timestamp);
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
