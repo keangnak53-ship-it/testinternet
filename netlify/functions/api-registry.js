@@ -5,9 +5,9 @@ const sql = neon(process.env.DATABASE_URL, { fullResults: true });
 exports.handler = async (event, context) => {
   try {
     if (event.httpMethod === 'GET') {
-      console.log('GET request - fetching registry data');
+      console.log('GET: Fetching registry data');
       const rows = await sql`SELECT * FROM registry ORDER BY timestamp DESC`;
-      console.log('Success - found rows:', rows.length);
+      console.log('GET success - found rows:', rows.length);
 
       return {
         statusCode: 200,
@@ -17,7 +17,7 @@ exports.handler = async (event, context) => {
     }
 
     if (event.httpMethod === 'POST') {
-      console.log('POST request - inserting new record');
+      console.log('POST: Inserting new entry');
       const data = JSON.parse(event.body || '{}');
 
       const fields = [
@@ -36,7 +36,7 @@ exports.handler = async (event, context) => {
       return {
         statusCode: 201,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Record inserted' })
+        body: JSON.stringify({ message: 'Entry added' })
       };
     }
 
@@ -45,7 +45,7 @@ exports.handler = async (event, context) => {
       body: 'Method Not Allowed'
     };
   } catch (error) {
-    console.error('Database error:', error);
+    console.error('API error:', error.message);
     return {
       statusCode: 500,
       body: JSON.stringify({ error: error.message })
