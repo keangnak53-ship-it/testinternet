@@ -2,7 +2,7 @@
 
 [build]
   publish = "."          # បើ project របស់អ្នកជា static site (index.html)
-  command = "npm server.js"           # បើគ្មាន build command ទុកទទេ
+  command = ""           # បើគ្មាន build command ទុកទទេ
 
 [functions]
   directory = "netlify/functions"   # folder ដែលមាន check-expirations.js
