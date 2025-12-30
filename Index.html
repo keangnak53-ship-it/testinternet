@@ -497,30 +497,34 @@ function addToNotiList(message, colorClass = "text-white") {
 
   // Submit new entry
   async function handleCommit(e) {
-    e.preventDefault();
-    const form = e.target;
-    const data = { timestamp: Date.now() };
-    FIELDS.forEach(field => {
-      const input = form.querySelector(`#${field}`);
-      data[field] = input ? input.value.trim() : "";
+  e.preventDefault();
+
+  const form = e.target;
+  const formData = {};
+
+  FIELDS.forEach(field => {
+    const input = document.getElementById(field);
+    formData[field] = input ? input.value.trim() : null;
+  });
+
+  try {
+    const res = await fetch("/.netlify/functions/api-registry", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(formData)
     });
 
-    try {
-      // POST
-      await fetch("/.netlify/functions/api-registry", {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify(formData)
-});
-      if (!res.ok) throw new Error(await res.text());
-      showNotification("បញ្ចូលទិន្នន័យជោគជ័យ!");
-      form.reset();
-      loadFromAPI();
-    } catch (err) {
-      console.error(err);
-      showNotification("មានបញ្ហាពេលបញ្ចូលទិន្នន័យ");
-    }
+    if (!res.ok) throw new Error(await res.text());
+
+    showNotification("បញ្ចូលទិន្នន័យជោគជ័យ!");
+    form.reset();
+    loadFromAPI();
+  } catch (err) {
+    console.error(err);
+    showNotification("មានបញ្ហាពេលបញ្ចូលទិន្នន័យ");
   }
+}
+
 
   // Basic CSV import (អាចពង្រីកបន្ថែមបាន)
   function importFromFile(event) {
@@ -641,7 +645,10 @@ function addToNotiList(message, colorClass = "text-white") {
     const row = btn.closest("tr");
     const timestamp = row.dataset.id;
     try {
-      await fetch(`/api/registry/${timestamp}`, { method: "DELETE" });
+      await fetch(`/.netlify/functions/api-registry?id=${timestamp}`, {
+  method: "DELETE"
+});
+
       loadFromAPI();
       showNotification("Entry removed.");
     } catch (err) {
@@ -662,12 +669,7 @@ function addToNotiList(message, colorClass = "text-white") {
   
   setInterval(updateTime, 1000);
 
-  function showNotification(msg) {
-    const box = document.getElementById("notification-box");
-    document.getElementById("notification-text").innerText = msg;
-    box.style.display = "block";
-    setTimeout(() => box.style.display = "none", 4000);
-  }
+  
 
   
 

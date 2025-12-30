@@ -5,7 +5,9 @@ const sql = neon(process.env.DATABASE_URL, { fullResults: true });  // fullResul
 exports.handler = async function (event, context) {
   try {
     // ១. ទាញទិន្នន័យទាំងអស់ពី registry
-    const rows = await sql`SELECT * FROM registry`;
+    const result = await sql`SELECT * FROM registry`;
+    const rows = result.rows; // ⭐ CRITICAL
+
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
@@ -13,11 +15,13 @@ exports.handler = async function (event, context) {
     let lastSent = null;
     try {
       const lastSentRes = await sql`
-        SELECT value FROM settings WHERE key = 'last_telegram_alert_date'
-      `;
-      if (lastSentRes.length > 0) {
-        lastSent = new Date(lastSentRes[0].value);
-      }
+          SELECT value FROM settings WHERE key = 'last_telegram_alert_date'
+        `;
+
+        if (lastSentRes.rows.length > 0) {
+          lastSent = new Date(lastSentRes.rows[0].value);
+        }
+
     } catch (e) {
       // បើ table មិនទាន់មាន បង្កើតវា (run ម្តងទេ)
       await sql`
@@ -28,17 +32,6 @@ exports.handler = async function (event, context) {
       `;
     }
 
-    // Test message (សម្រាប់ debug បើចង់សាក)
-    // await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     chat_id: process.env.TELEGRAM_CHAT_ID,
-    //     text: 'សាកសារ test ពី Netlify Function ដោយដៃ! ថ្ងៃនេះដំណើរការ។',
-    //     parse_mode: 'HTML'
-    //   })
-    // });
-    // console.log('Test message sent');
 
     // បើថ្ងៃនេះផ្ញើរួចហើយ → ឈប់
     if (lastSent && lastSent.toDateString() === today.toDateString()) {

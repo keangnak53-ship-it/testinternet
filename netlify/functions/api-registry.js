@@ -6,13 +6,21 @@ exports.handler = async (event, context) => {
   try {
     if (event.httpMethod === 'GET') {
       console.log('GET: Fetching registry data');
-      const rows = await sql`SELECT * FROM registry ORDER BY timestamp DESC`;
-      console.log('GET success - found rows:', rows.length);
-
+    
+      const result = await sql`
+        SELECT * FROM registry
+        ORDER BY timestamp DESC
+      `;
+    
+      console.log('GET success - found rows:', result.rows.length);
+    
       return {
         statusCode: 200,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(rows)
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*'
+        },
+        body: JSON.stringify(result.rows) // ✅ ONLY rows
       };
     }
 
@@ -39,6 +47,21 @@ exports.handler = async (event, context) => {
         body: JSON.stringify({ message: 'Entry added' })
       };
     }
+    if (event.httpMethod === "DELETE") {
+      const id = event.queryStringParameters?.id;
+    
+      if (!id) {
+        return { statusCode: 400, body: "Missing id" };
+      }
+    
+      await sql`DELETE FROM registry WHERE timestamp = ${id}`;
+    
+      return {
+        statusCode: 200,
+        body: JSON.stringify({ message: "Deleted" })
+      };
+    }
+    
 
     return {
       statusCode: 405,
