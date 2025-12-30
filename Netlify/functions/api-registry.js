@@ -6,10 +6,10 @@ exports.handler = async (event, context) => {
   });
 
   try {
-    // GET: ទាញទិន្នន័យទាំងអស់ពី table registry
+    // GET: ទាញទិន្នន័យទាំងអស់
     if (event.httpMethod === 'GET') {
       const res = await pool.query('SELECT * FROM registry ORDER BY timestamp DESC');
-      console.log('GET success, rows:', res.rows.length);
+      console.log('GET success - rows found:', res.rows.length);
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
@@ -20,7 +20,7 @@ exports.handler = async (event, context) => {
     // POST: បញ្ចូល record ថ្មី
     if (event.httpMethod === 'POST') {
       const data = JSON.parse(event.body);
-      console.log('POST data received:', data);
+      console.log('POST received:', data);
 
       const fields = [
         'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
@@ -46,7 +46,7 @@ exports.handler = async (event, context) => {
       const params = [Date.now(), ...values];
       const result = await pool.query(queryText, params);
 
-      console.log('POST insert success, new ID:', result.rows[0].timestamp);
+      console.log('POST insert success');
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },

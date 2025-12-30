@@ -503,11 +503,12 @@ function addToNotiList(message, colorClass = "text-white") {
     });
 
     try {
-      const res = await fetch("/api/registry", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
+      // POST
+const res = await fetch("/api/registry", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify(formData)
+});
       if (!res.ok) throw new Error(await res.text());
       showNotification("បញ្ចូលទិន្នន័យជោគជ័យ!");
       form.reset();
