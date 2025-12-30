@@ -1,21 +1,21 @@
-const { Pool } = require('pg');
+import { neon } from '@neondatabase/serverless';
+
+// ប្រើ DATABASE_URL ពី environment variable ដោយស្វ័យប្រវត្តិ
+const sql = neon(process.env.DATABASE_URL, { fullResults: true });
 
 exports.handler = async (event, context) => {
   console.log('Function invoked with method:', event.httpMethod);
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-  });
-
   try {
     if (event.httpMethod === 'GET') {
       console.log('GET request - fetching registry data');
-      const res = await pool.query('SELECT * FROM registry ORDER BY timestamp DESC');
-      console.log('GET success - found rows:', res.rows.length);
+      const rows = await sql`SELECT * FROM registry ORDER BY timestamp DESC`;
+      console.log('GET success - found rows:', rows.length);
+
       return {
         statusCode: 200,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(res.rows)
+        body: JSON.stringify(rows)
       };
     }
 
@@ -26,33 +26,23 @@ exports.handler = async (event, context) => {
 
       const fields = [
         'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
-        'user', 'password', 'ipPublic', 'gateway', 'ipPrivate', 'entryId',
-        'speed', 'wirelessSsid', 'wirelessPass', 'userDevice', 'pasDevices', 'hotline'
+        'ipPublic', 'gateway', 'ipPrivate', 'speed', 'wirelessSsid', 'wirelessPass',
+        'user', 'password', 'ipPublic', 'gateway', 'ipPrivate', 'entryId', 'hotline'
+        // បន្ថែម fields ផ្សេងទៀតដែលអ្នកមាន
       ];
 
-      const values = fields.map(f => data[f] || null);
-      const placeholders = fields.map((_, i) => `$${i+2}`).join(',');
+      const values = fields.map(f => data[f] ?? null);
 
-      const queryText = `
-        INSERT INTO registry (
-          timestamp,
-          "siteName", partner, "registerDate", "expireDate",
-          "requestSubscript", "user", password, "ipPublic", gateway,
-          "ipPrivate", "entryId", speed, "wirelessSsid", "wirelessPass",
-          "userDevice", "pasDevices", hotline
-        ) VALUES (
-          $1, ${placeholders}
-        ) RETURNING *;
+      // ប្រើ parameterized query ដើម្បីសុវត្ថិភាព
+      await sql`
+        INSERT INTO registry (${sql(fields)})
+        VALUES (${sql(values)})
       `;
 
-      const params = [Date.now(), ...values];
-      const result = await pool.query(queryText, params);
-
-      console.log('POST insert success - new timestamp:', result.rows[0].timestamp);
       return {
-        statusCode: 200,
+        statusCode: 201,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ success: true })
+        body: JSON.stringify({ message: 'Record inserted successfully' })
       };
     }
 
@@ -60,13 +50,11 @@ exports.handler = async (event, context) => {
       statusCode: 405,
       body: 'Method Not Allowed'
     };
-  } catch (err) {
-    console.error('API error:', err.message);
+  } catch (error) {
+    console.error('Database error:', error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: err.message })
+      body: JSON.stringify({ error: error.message })
     };
-  } finally {
-    await pool.end();
   }
 };
