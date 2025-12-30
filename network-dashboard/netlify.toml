@@ -1,0 +1,11 @@
+[build]
+  command = "npm run build"  # បើអ្នកមាន build script បើគ្មាន អាចលុបបន្ទាត់នេះ
+  publish = "."              # បើ deploy ទំព័រ static ដូច index.html
+
+[functions]
+  node_bundler = "esbuild"
+  directory = "netlify/functions"
+
+[[functions.schedule]]
+  name = "check-expirations"
+  cron = "0 * * * *"  # សាកល្បងរាល់ម៉ោងសិន (ប្តូរទៅ "0 8 * * *" ក្រោយសាកជោគជ័យ)
