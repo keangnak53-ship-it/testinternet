@@ -589,15 +589,20 @@ function addToNotiList(message, colorClass = "text-white") {
 
   // Clear all records
   async function confirmClearAll() {
-    if (!confirm("បញ្ជាក់ការលុបទាំងអស់?")) return;
-    try {
-      await fetch("/api/registry", { method: "DELETE" });
-      loadFromAPI();
-      showNotification("All records cleared.");
-    } catch (err) {
-      showNotification("Clear failed");
-    }
+  try {
+    await fetch("/.netlify/functions/api-registry", {
+      method: "DELETE"
+    });
+
+    closeModal();
+    loadFromAPI();
+    showNotification("បានលុបទិន្នន័យទាំងអស់!");
+  } catch (err) {
+    console.error(err);
+    showNotification("លុបទាំងអស់មិនបាន");
   }
+}
+
 
   function openClearModal() {
     if (allData.length === 0) return showNotification("Database is empty.");
