@@ -533,12 +533,34 @@ function addToNotiList(message, colorClass = "text-white") {
 
         for (let i = 1; i < lines.length; i++) {
           const values = lines[i].split(",");
+
           if (values.length < FIELDS.length) continue;
+
           const entry = { timestamp: Date.now() + i };
+          let hasContent = false;
           FIELDS.forEach((field, idx) => {
-            entry[field] = values[idx]?.trim() || "";
+            const val = values[idx]?.trim() || "";
+            entry[field] = val;
+            
+            // ឆែកមើលថា តើក្នុងជួរនោះមានទិន្នន័យខ្លះអត់
+            if (val !== "") hasContent = true;
           });
-          newEntries.push(entry);
+          // --- លក្ខខណ្ឌកែថ្មី ---
+          // ១. ត្រូវតែមានទិន្នន័យខ្លះ (មិនមែនទទេស្អាត)
+          // ២. និងត្រូវតែមានឈ្មោះ Site (siteName) ទើបព្រមយក
+          const hasSiteName = entry.siteName && entry.siteName.trim() !== "";
+
+          if (hasContent && hasSiteName) {
+            newEntries.push(entry);
+          } else {
+            // បើទទេ ឬអត់ឈ្មោះ Site គឺវានឹង Skip (រំលង) ចោលដោយស្វ័យប្រវត្តិ
+            console.log(`ជួរទី ${i + 1} ត្រូវបានលុបចេញដោយសារទទេ ឬគ្មានឈ្មោះ Site`);
+          }
+        }
+        // បើក្រោយពីលុបជួរទទេចេញអស់ហើយ នៅសល់ទិន្នន័យ ទើបផ្ញើទៅ API
+        if (newEntries.length === 0) {
+          showNotification("គ្មានទិន្នន័យត្រឹមត្រូវសម្រាប់ Import ទេ");
+          return;
         }
 
         for (const entry of newEntries) {
