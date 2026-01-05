@@ -24,29 +24,97 @@ exports.handler = async (event, context) => {
       };
     }
 
+    // if (event.httpMethod === 'POST') {
+    //   console.log('POST: Inserting new entry');
+    //   const data = JSON.parse(event.body || '{}');
+
+    //   const fields = [
+    //     'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
+    //     'ipPublic', 'gateway', 'ipPrivate', 'speed', 'wirelessSsid', 'wirelessPass',
+    //     'user', 'password', 'entryId', 'hotline'
+    //   ];
+
+    //   const values = fields.map(f => data[f] ?? null);
+
+    //   await sql`
+    //     INSERT INTO registry (${sql(fields)})
+    //     VALUES (${sql(values)})
+    //   `;
+
+    //   return {
+    //     statusCode: 201,
+    //     headers: { 'Content-Type': 'application/json' },
+    //     body: JSON.stringify({ message: 'Entry added' })
+    //   };
+    // }
+
     if (event.httpMethod === 'POST') {
-      console.log('POST: Inserting new entry');
-      const data = JSON.parse(event.body || '{}');
-
-      const fields = [
-        'siteName', 'partner', 'registerDate', 'expireDate', 'requestSubscript',
-        'ipPublic', 'gateway', 'ipPrivate', 'speed', 'wirelessSsid', 'wirelessPass',
-        'user', 'password', 'entryId', 'hotline'
-      ];
-
-      const values = fields.map(f => data[f] ?? null);
-
-      await sql`
-        INSERT INTO registry (${sql(fields)})
-        VALUES (${sql(values)})
-      `;
-
-      return {
-        statusCode: 201,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: 'Entry added' })
-      };
+      try {
+        console.log('POST: Inserting new entry');
+    
+        const data = JSON.parse(event.body || '{}');
+    
+        await sql`
+          INSERT INTO registry (
+            site_name,
+            partner,
+            register_date,
+            expire_date,
+            request_subscript,
+            ip_public,
+            gateway,
+            ip_private,
+            speed,
+            wireless_ssid,
+            wireless_pass,
+            username,
+            password,
+            entry_id,
+            hotline
+          ) VALUES (
+            ${data.siteName ?? null},
+            ${data.partner ?? null},
+            ${data.registerDate ?? null},
+            ${data.expireDate ?? null},
+            ${data.requestSubscript ?? null},
+            ${data.ipPublic ?? null},
+            ${data.gateway ?? null},
+            ${data.ipPrivate ?? null},
+            ${data.speed ?? null},
+            ${data.wirelessSsid ?? null},
+            ${data.wirelessPass ?? null},
+            ${data.user ?? null},
+            ${data.password ?? null},
+            ${data.entryId ?? null},
+            ${data.hotline ?? null}
+          )
+        `;
+    
+        return {
+          statusCode: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ message: 'Entry added successfully' })
+        };
+      } catch (err) {
+        console.error('POST error:', err);
+    
+        return {
+          statusCode: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({
+            error: 'Insert failed',
+            detail: err.message
+          })
+        };
+      }
     }
+    
     if (event.httpMethod === "DELETE") {
       const id = event.queryStringParameters?.id;
     
