@@ -50,36 +50,75 @@ exports.handler = async (event, context) => {
 
     if (event.httpMethod === 'POST') {
       try {
+        console.log('POST: Inserting new entry');
+
+        // Parse JSON safely
         let data;
         try {
           data = JSON.parse(event.body);
         } catch (e) {
           return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
         }
-    
-        // Required fields validation
-        if (!data.registerDate || !data.entryId) {
-          return { statusCode: 400, body: JSON.stringify({ error: 'registerDate and entryId required' }) };
+
+        // Validate required fields (if needed)
+        if (!data.entryId) {
+          return { statusCode: 400, body: JSON.stringify({ error: 'entryId is required' }) };
         }
-    
+
+        // Validate registerDate and expireDate
+        const parseDate = (d) => {
+          if (!d) return null;
+          const date = new Date(d);
+          return isNaN(date) ? null : date.toISOString().split('T')[0]; // YYYY-MM-DD
+        };
+
+        const ts = Date.now(); // generate timestamp for PRIMARY KEY
+
         await sql`
           INSERT INTO registry (
-            "registerDate", "expireDate", "requestSubscript", "user", "password",
-            "ipPublic", "gateway", "ipPrivate", "entryId", "speed",
-            "wirelessSsid", "wirelessPass", "userDevice", "pasDevices", "hotline",
-            "siteName", "partner"
+            timestamp, siteName, partner, registerDate, expireDate, requestSubscript,
+            user, password, ipPublic, gateway, ipPrivate, entryId,
+            speed, wirelessSsid, wirelessPass, userDevice, pasDevices, hotline
           ) VALUES (
-            ${data.registerDate}, ${data.expireDate}, ${data.requestSubscript}, ${data.user}, ${data.password},
-            ${data.ipPublic}, ${data.gateway}, ${data.ipPrivate}, ${data.entryId}, ${data.speed},
-            ${data.wirelessSsid}, ${data.wirelessPass}, ${data.userDevice}, ${data.pasDevices}, ${data.hotline},
-            ${data.siteName}, ${data.partner}
+            ${ts},
+            ${data.siteName ?? null},
+            ${data.partner ?? null},
+            ${parseDate(data.registerDate)},
+            ${parseDate(data.expireDate)},
+            ${data.requestSubscript ?? null},
+            ${data.user ?? null},
+            ${data.password ?? null},
+            ${data.ipPublic ?? null},
+            ${data.gateway ?? null},
+            ${data.ipPrivate ?? null},
+            ${data.entryId},
+            ${data.speed ?? null},
+            ${data.wirelessSsid ?? null},
+            ${data.wirelessPass ?? null},
+            ${data.userDevice ?? null},
+            ${data.pasDevices ?? null},
+            ${data.hotline ?? null}
           )
         `;
-    
-        return { statusCode: 201, body: JSON.stringify({ message: 'Entry added successfully' }) };
+
+        return {
+          statusCode: 201,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ message: 'Entry added successfully', timestamp: ts })
+        };
       } catch (error) {
-        console.error('POST error:', error);
-        return { statusCode: 500, body: JSON.stringify({ error: 'Insert failed', detail: error.message }) };
+        console.error('POST error:', error.message);
+        return {
+          statusCode: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+          },
+          body: JSON.stringify({ error: 'Insert failed', detail: error.message })
+        };
       }
     }
     
