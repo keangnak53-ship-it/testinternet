@@ -5,7 +5,7 @@ const { Pool } = require('pg');
 require('dotenv').config();
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 // Middleware
 app.use(cors());
@@ -15,6 +15,9 @@ app.use(express.static(__dirname)); // serve index.html
 // === ភ្ជាប់ Neon Postgres ត្រឹមត្រូវបំផុត ===
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // បន្ថែមបន្ទាត់នេះដើម្បីជៀសវាងបញ្ហា certificate លើ Render
+  }
   // មិនចាំបាច់បន្ថែម ssl ទេ ព្រោះ ?sslmode=require មានរួចហើយ
 });
 
@@ -138,6 +141,6 @@ app.delete('/api/registry', async (req, res) => {
   }
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`Server running at port ${PORT}`);
 });
