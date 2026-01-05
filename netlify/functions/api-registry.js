@@ -56,37 +56,41 @@ exports.handler = async (event, context) => {
     
         await sql`
           INSERT INTO registry (
-            site_name,
-            partner,
-            register_date,
-            expire_date,
-            request_subscript,
-            ip_public,
-            gateway,
-            ip_private,
-            speed,
-            wireless_ssid,
-            wireless_pass,
-            username,
-            password,
-            entry_id,
-            hotline
+            "registerDate",
+            "expireDate",
+            "requestSubscript",
+            "user",
+            "password",
+            "ipPublic",
+            "gateway",
+            "ipPrivate",
+            "entryId",
+            "speed",
+            "wirelessSsid",
+            "wirelessPass",
+            "userDevice",
+            "pasDevices",
+            "hotline",
+            "siteName",
+            "partner"
           ) VALUES (
-            ${data.siteName ?? null},
-            ${data.partner ?? null},
             ${data.registerDate ?? null},
             ${data.expireDate ?? null},
             ${data.requestSubscript ?? null},
+            ${data.user ?? null},
+            ${data.password ?? null},
             ${data.ipPublic ?? null},
             ${data.gateway ?? null},
             ${data.ipPrivate ?? null},
+            ${data.entryId ?? null},
             ${data.speed ?? null},
             ${data.wirelessSsid ?? null},
             ${data.wirelessPass ?? null},
-            ${data.user ?? null},
-            ${data.password ?? null},
-            ${data.entryId ?? null},
-            ${data.hotline ?? null}
+            ${data.userDevice ?? null},
+            ${data.pasDevices ?? null},
+            ${data.hotline ?? null},
+            ${data.siteName ?? null},
+            ${data.partner ?? null}
           )
         `;
     
@@ -98,8 +102,8 @@ exports.handler = async (event, context) => {
           },
           body: JSON.stringify({ message: 'Entry added successfully' })
         };
-      } catch (err) {
-        console.error('POST error:', err);
+      } catch (error) {
+        console.error('POST error:', error);
     
         return {
           statusCode: 500,
@@ -109,11 +113,14 @@ exports.handler = async (event, context) => {
           },
           body: JSON.stringify({
             error: 'Insert failed',
-            detail: err.message
+            detail: error.message
           })
         };
       }
     }
+    
+    
+    
     
     if (event.httpMethod === "DELETE") {
       const id = event.queryStringParameters?.id;
