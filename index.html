@@ -534,7 +534,7 @@ function addToNotiList(message, colorClass = "text-white") {
         }
 
         for (const entry of newEntries) {
-          await fetch("/.netlify/functions/api-registry", {
+          await fetch("/api-registry", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(entry)
