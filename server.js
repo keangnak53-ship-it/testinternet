@@ -1,4 +1,5 @@
 // server.js
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
@@ -10,7 +11,11 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(__dirname)); // serve index.html
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // === ភ្ជាប់ Neon Postgres ត្រឹមត្រូវបំផុត ===
 const pool = new Pool({
