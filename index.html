@@ -369,12 +369,24 @@ function addToNotiList(message, colorClass = "text-white") {
     const sorted = [...data].sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
     sorted.forEach((item, i) => {
       const expDate = item.expireDate ? new Date(item.expireDate) : null;
-      const isExpired = expDate && expDate < today;
+      if (expDate) expDate.setHours(0, 0, 0, 0); // បន្ថែមជួរនេះ ដើម្បីកុំឱ្យវាគិតនាទី/វិនាទី
+      const isExpired = expDate && expDate <= today;
+      // ថែមថ្មី៖ លក្ខខណ្ឌសម្រាប់ជិតផុតកំណត់ (៧ ថ្ងៃ)
+      const daysLeft = expDate ? Math.ceil((expDate - today) / (1000 * 60 * 60 * 24)) : null;
+      const isSoon = daysLeft !== null && daysLeft <= 7 && daysLeft > 0;
 
       const row = document.createElement("tr");
       row.dataset.id = item.timestamp;
-      row.className = isExpired ? "bg-red-900/30 border-l-4 border-red-500" : "";
 
+      // កំណត់ពណ៌ទៅតាមលក្ខខណ្ឌ
+      if (isExpired) {
+        row.className = "bg-red-900/40 border-l-4 border-red-500 text-red-100";
+      } else if (isSoon) {
+        row.className = "bg-yellow-900/30 border-l-4 border-yellow-500 text-yellow-100";
+      } else {
+        row.className = "border-b border-slate-800 hover:bg-slate-800/50";
+      }
+      
       // NO
       const tdNo = document.createElement("td");
       tdNo.className = "px-4 py-4 text-center";
@@ -399,8 +411,10 @@ function addToNotiList(message, colorClass = "text-white") {
           }
         }
 
+        // --- កន្លែងកែថ្មី (នៅក្នុង FIELDS.forEach) ---
         if (isExpired && (key === "expireDate" || key === "siteName")) {
-          td.className += " text-red-400 font-bold";
+          // បន្ថែម text-lg (អក្សរធំ) និង font-bold (អក្សរដិត)
+          td.className += " text-red-400 font-bold text-lg";
         }
 
         td.textContent = val;
