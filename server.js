@@ -8,6 +8,52 @@ require('dotenv').config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// មុខងារសម្រាប់ឆែកលក្ខខណ្ឌមុននឹងផ្ញើទៅ Telegram
+async function checkAndSendTelegram(item) {
+    const today = new Date();
+    const expireDate = new Date(item.expireDate);
+    const lastNotified = item.last_notified ? new Date(item.last_notified) : null;
+
+    // គណនាចំនួនថ្ងៃដែលនៅសល់
+    const daysLeft = Math.ceil((expireDate - today) / (1000 * 60 * 60 * 24));
+
+    // ឆែកមើលថាតើធ្លាប់ផ្ញើក្នុងរយៈពេល ២៤ ម៉ោងចុងក្រោយឬនៅ
+    const twentyFourHoursAgo = new Date(today.getTime() - (24 * 60 * 60 * 1000));
+    const alreadyNotifiedToday = lastNotified && lastNotified > twentyFourHoursAgo;
+
+    // បើធ្លាប់ផ្ញើហើយ មិនបាច់ផ្ញើទៀតទេ
+    if (alreadyNotifiedToday) return;
+
+    // លក្ខខណ្ឌផ្ញើសារ (ជិតផុតកំណត់ ឬ ផុតកំណត់)
+    let message = "";
+    if (daysLeft <= 0) {
+        message = `🔥 <b>ផុតកំណត់ហើយ!</b>\nទីតាំង៖ ${item.siteName}\nកាលបរិច្ឆេទ៖ ${expireDate.toLocaleDateString('km-KH')}`;
+    } else if (daysLeft <= 7) {
+        message = `‼️ <b>ជិតផុតកំណត់!</b> (នៅសល់ ${daysLeft} ថ្ងៃ)\nទីតាំង៖ ${item.siteName}\nកាលបរិច្ឆេទ៖ ${expireDate.toLocaleDateString('km-KH')}`;
+    }
+
+    if (message) {
+        try {
+            await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_TOKEN}/sendMessage`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    chat_id: process.env.TELEGRAM_CHAT_ID,
+                    text: message,
+                    parse_mode: 'HTML'
+                })
+            });
+
+            // បន្ទាប់ពីផ្ញើរួច ត្រូវ Update ម៉ោងក្នុង Database ដើម្បីចំណាំថាបានផ្ញើរួចហើយ
+            await pool.query(
+                'UPDATE registry SET last_notified = NOW() WHERE timestamp = $1',
+                [item.timestamp]
+            );
+        } catch (err) {
+            console.error("Telegram error:", err);
+        }
+    }
+}
 // Middleware
 app.use(cors());
 app.use(express.json());
