@@ -411,12 +411,6 @@ function addToNotiList(message, colorClass = "text-white") {
           }
         }
 
-        // --- កន្លែងកែថ្មី (នៅក្នុង FIELDS.forEach) ---
-        if (isExpired && (key === "expireDate" || key === "siteName")) {
-          // បន្ថែម text-lg (អក្សរធំ) និង font-bold (អក្សរដិត)
-          td.className += " text-red-400 font-bold text-lg";
-        }
-
         td.textContent = val;
         row.appendChild(td);
       });
