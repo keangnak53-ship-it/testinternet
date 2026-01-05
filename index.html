@@ -288,30 +288,12 @@ function showNotification(msg) {
 }
 
 // Send to Telegram
-async function sendToTelegram(message) {
-  const url = `https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage`;
-  try {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: TELEGRAM_CHAT_ID,
-        text: message,
-        parse_mode: "HTML"
-      })
-    });
-    const data = await res.json();
-    if (data.ok) console.log("Telegram sent");
-    else console.error("Telegram failed:", data);
-  } catch (err) {
-    console.error("Telegram error:", err);
-  }
-}
+
   // Load data from API
   async function loadFromAPI() {
     try {
       // GET
-      const res = await fetch("/.netlify/functions/api-registry");
+      const res = await fetch("/api-registry");
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       allData = Array.isArray(data) ? data : [];
@@ -508,7 +490,7 @@ function addToNotiList(message, colorClass = "text-white") {
   });
 
   try {
-    const res = await fetch("/.netlify/functions/api-registry", {
+    const res = await fetch("/api-registry", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(formData)
@@ -590,7 +572,7 @@ function addToNotiList(message, colorClass = "text-white") {
   // Clear all records
   async function confirmClearAll() {
   try {
-    await fetch("/.netlify/functions/api-registry", {
+    await fetch("/api-registry", {
       method: "DELETE"
     });
 
@@ -650,7 +632,7 @@ function addToNotiList(message, colorClass = "text-white") {
     const row = btn.closest("tr");
     const timestamp = row.dataset.id;
     try {
-      await fetch(`/.netlify/functions/api-registry?id=${timestamp}`, {
+      await fetch(`/api-registry?id=${timestamp}`, {
   method: "DELETE"
 });
 
@@ -667,8 +649,7 @@ function addToNotiList(message, colorClass = "text-white") {
     drop.style.display = drop.style.display === "block" ? "none" : "block";
   }
 
-  const TELEGRAM_TOKEN = "8228223432:AAFbVl-rjxoaRq44L0oUufui3HpBtAmQzMo";
-  const TELEGRAM_CHAT_ID = "-1003318155720";
+
 
 
   
