@@ -718,21 +718,72 @@ function addToNotiList(message, colorClass = "text-white") {
         console.error("Delete error:", err);
     }
 }
-//   async function removeRow(btn) {
-//     if (!confirm("Delete this entry?")) return;
-//     const row = btn.closest("tr");
-//     const timestamp = row.dataset.id;
-//     try {
-//       await fetch(`/api/registry?id=${timestamp}`, {
-//   method: "DELETE"
-// });
 
-//       loadFromAPI();
-//       showNotification("Entry removed.");
-//     } catch (err) {
-//       showNotification("Remove failed");
-//     }
-//   }
+async function exportToExcel() {
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet('Registry Logs');
+
+    // ១. កំណត់ Header (ជួរឈរ)
+    const columns = [
+        { header: 'No', key: 'no', width: 5 },
+        { header: 'Site Name', key: 'siteName', width: 25 },
+        { header: 'Provider', key: 'provider', width: 15 },
+        { header: 'Reg Date', key: 'registerDate', width: 15 },
+        { header: 'Exp Date', key: 'expireDate', width: 15 },
+        // ... បងអាចថែម FIELDS ផ្សេងទៀតនៅទីនេះ
+    ];
+    worksheet.columns = columns;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    // ២. បញ្ចូលទិន្នន័យ និងដាក់ពណ៌
+    const tableData = Array.from(document.querySelectorAll("#tableBody tr"));
+    
+    tableData.forEach((row, index) => {
+        const rowData = { no: index + 1 };
+        const cells = row.querySelectorAll("td");
+        
+        // ទាញទិន្នន័យពី Cell ក្នុង Table
+        columns.slice(1).forEach((col, i) => {
+            rowData[col.key] = cells[i + 1].textContent;
+        });
+
+        const excelRow = worksheet.addRow(rowData);
+
+        // --- ពិនិត្យលក្ខខណ្ឌពណ៌ ---
+        const expStr = rowData.expireDate;
+        if (expStr && expStr !== "-") {
+            const parts = expStr.split('/'); // បើថ្ងៃខែបងជា DD/MM/YYYY
+            const expDate = new Date(parts[2], parts[1] - 1, parts[0]);
+            expDate.setHours(0, 0, 0, 0);
+
+            const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+
+            if (expDate <= today) {
+                // ដាក់ពណ៌ក្រហម ក្នុង Excel (Expired)
+                excelRow.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFFC7CE' } // ពណ៌ក្រហមខ្ចី
+                };
+                excelRow.font = { color: { argb: 'FF9C0006' }, bold: true }; // អក្សរក្រហមដិត
+            } else if (daysLeft <= 7) {
+                // ដាក់ពណ៌លឿង ក្នុង Excel (Soon)
+                excelRow.fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFFFEB9C' } // ពណ៌លឿង
+                };
+                excelRow.font = { color: { argb: 'FF9C6500' } };
+            }
+        }
+    });
+
+    // ៣. ទាញជា File ចេញមក
+    const buffer = await workbook.xlsx.writeBuffer();
+    saveAs(new Blob([buffer]), `Registry_Report_${new Date().toLocaleDateString()}.xlsx`);
+}
 
   // Toggle notification dropdown
   function toggleNoti() {
