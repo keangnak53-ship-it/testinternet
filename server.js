@@ -170,16 +170,20 @@ app.post('/api/registry', async (req, res) => {
   });
 
 // API: Delete single entry
-app.delete('/api/registry/:timestamp', async (req, res) => {
-  try {
-    const { timestamp } = req.params;
-    await pool.query('DELETE FROM registry WHERE timestamp = $1', [timestamp]);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Delete error:', err);
-    res.status(500).json({ error: 'Delete failed' });
-  }
+// Route សម្រាប់លុបទិន្នន័យតែមួយជួរ (Delete Specific Row)
+app.delete('/api/registry/:id', async (req, res) => {
+    const { id } = req.params;
+    try {
+        // លុបជួរណាដែលមាន timestamp ត្រូវជាមួយ ID ដែលផ្ញើមក
+        await pool.query('DELETE FROM registry WHERE timestamp = $1', [id]);
+        res.status(200).send("Deleted successfully");
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Error deleting record");
+    }
 });
+
+
 
 // API: Delete all
 app.delete('/api/registry', async (req, res) => {

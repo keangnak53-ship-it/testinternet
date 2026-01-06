@@ -657,21 +657,43 @@ function addToNotiList(message, colorClass = "text-white") {
   }
 
   // Basic remove
-  async function removeRow(btn) {
-    if (!confirm("Delete this entry?")) return;
-    const row = btn.closest("tr");
-    const timestamp = row.dataset.id;
-    try {
-      await fetch(`/api/registry?id=${timestamp}`, {
-  method: "DELETE"
-});
+  async function removeRow(button) {
+    if (!confirm("តើបងប្រាកដថាចង់លុបព័ត៌មាននេះមែនទេ?")) return;
 
-      loadFromAPI();
-      showNotification("Entry removed.");
+    // ទាញយក ID (Timestamp) ពី Row ដែលបានចុច
+    const row = button.closest("tr");
+    const id = row.dataset.id; 
+
+    try {
+        const response = await fetch(`/api/registry/${id}`, {
+            method: "DELETE"
+        });
+
+        if (response.ok) {
+            showNotification("បានលុបទិន្នន័យជោគជ័យ");
+            loadFromAPI(); // Refresh តារាងឡើងវិញ
+        } else {
+            showNotification("ការលុបមានបញ្ហា!");
+        }
     } catch (err) {
-      showNotification("Remove failed");
+        console.error("Delete error:", err);
     }
-  }
+}
+//   async function removeRow(btn) {
+//     if (!confirm("Delete this entry?")) return;
+//     const row = btn.closest("tr");
+//     const timestamp = row.dataset.id;
+//     try {
+//       await fetch(`/api/registry?id=${timestamp}`, {
+//   method: "DELETE"
+// });
+
+//       loadFromAPI();
+//       showNotification("Entry removed.");
+//     } catch (err) {
+//       showNotification("Remove failed");
+//     }
+//   }
 
   // Toggle notification dropdown
   function toggleNoti() {
