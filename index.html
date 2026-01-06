@@ -723,66 +723,58 @@ async function exportToExcel() {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet('Registry Logs');
 
-    // ១. កំណត់ Header (ជួរឈរ)
-    const columns = [
-        { header: 'No', key: 'no', width: 5 },
-        { header: 'Site Name', key: 'siteName', width: 25 },
-        { header: 'Provider', key: 'provider', width: 15 },
-        { header: 'Reg Date', key: 'registerDate', width: 15 },
-        { header: 'Exp Date', key: 'expireDate', width: 15 },
-        // ... បងអាចថែម FIELDS ផ្សេងទៀតនៅទីនេះ
-    ];
-    worksheet.columns = columns;
+    // ១. កំណត់ឈ្មោះជួរឈរ (Headers)
+    const headers = ["No", ...FIELDS.map(f => f.toUpperCase()), "Action"];
+    const headerRow = worksheet.addRow(headers);
+    
+    // Style សម្រាប់ Header
+    headerRow.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    headerRow.eachCell((cell) => {
+        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E293B' } };
+    });
 
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // ២. បញ្ចូលទិន្នន័យ និងដាក់ពណ៌
-    const tableData = Array.from(document.querySelectorAll("#tableBody tr"));
+    // ២. ទាញទិន្នន័យពី HTML Table ដើម្បីយកពណ៌តាមជាក់ស្ដែង
+    const rows = document.querySelectorAll("#tableBody tr");
     
-    tableData.forEach((row, index) => {
-        const rowData = { no: index + 1 };
-        const cells = row.querySelectorAll("td");
-        
-        // ទាញទិន្នន័យពី Cell ក្នុង Table
-        columns.slice(1).forEach((col, i) => {
-            rowData[col.key] = cells[i + 1].textContent;
-        });
-
+    rows.forEach((tr, index) => {
+        const rowData = Array.from(tr.cells).map(cell => cell.textContent);
         const excelRow = worksheet.addRow(rowData);
 
-        // --- ពិនិត្យលក្ខខណ្ឌពណ៌ ---
-        const expStr = rowData.expireDate;
-        if (expStr && expStr !== "-") {
-            const parts = expStr.split('/'); // បើថ្ងៃខែបងជា DD/MM/YYYY
-            const expDate = new Date(parts[2], parts[1] - 1, parts[0]);
-            expDate.setHours(0, 0, 0, 0);
+        // ឆែកមើលថ្ងៃផុតកំណត់ (ជួរទី ៥ ក្នុង Table របស់បង)
+        const expCell = tr.cells[4]; // ថ្ងៃផុតកំណត់ស្ថិតនៅ Column ទី ៥
+        if (expCell) {
+            const expText = expCell.textContent.trim();
+            if (expText !== "-") {
+                const parts = expText.split('/');
+                const expDate = new Date(parts[2], parts[1] - 1, parts[0]);
+                expDate.setHours(0, 0, 0, 0);
 
-            const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
+                const daysLeft = Math.ceil((expDate - today) / (1000 * 60 * 60 * 24));
 
-            if (expDate <= today) {
-                // ដាក់ពណ៌ក្រហម ក្នុង Excel (Expired)
-                excelRow.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFFC7CE' } // ពណ៌ក្រហមខ្ចី
-                };
-                excelRow.font = { color: { argb: 'FF9C0006' }, bold: true }; // អក្សរក្រហមដិត
-            } else if (daysLeft <= 7) {
-                // ដាក់ពណ៌លឿង ក្នុង Excel (Soon)
-                excelRow.fill = {
-                    type: 'pattern',
-                    pattern: 'solid',
-                    fgColor: { argb: 'FFFFEB9C' } // ពណ៌លឿង
-                };
-                excelRow.font = { color: { argb: 'FF9C6500' } };
+                // លក្ខខណ្ឌដាក់ពណ៌ក្នុង Excel ឱ្យដូចក្នុង Web
+                if (expDate <= today) {
+                    // ពណ៌ក្រហម (Expired)
+                    excelRow.eachCell((cell) => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFC7CE' } };
+                        cell.font = { color: { argb: 'FF9C0006' } };
+                    });
+                } else if (daysLeft <= 7) {
+                    // ពណ៌លឿង (Soon)
+                    excelRow.eachCell((cell) => {
+                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFFFEB9C' } };
+                        cell.font = { color: { argb: 'FF9C6500' } };
+                    });
+                }
             }
         }
     });
 
-    // ៣. ទាញជា File ចេញមក
+    // ៣. បង្កើត File និង Download
     const buffer = await workbook.xlsx.writeBuffer();
-    saveAs(new Blob([buffer]), `Registry_Report_${new Date().toLocaleDateString()}.xlsx`);
+    saveAs(new Blob([buffer]), `Registry_Logs_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
 
   // Toggle notification dropdown
