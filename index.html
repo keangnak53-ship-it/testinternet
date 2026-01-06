@@ -81,7 +81,7 @@
         <span id="notiBadge" class="hidden absolute top-1 right-1 bg-red-600 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full border-2 border-slate-950">0</span>
       </div>
       <label class="flex items-center gap-2 bg-amber-600/10 hover:bg-amber-600/20 text-amber-400 border border-amber-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase cursor-pointer transition-all">
-        <i class="fas fa-file-import"></i> Import CSV / Excel
+        <i class="fas fa-file-import"></i> Import CSV
         <input type="file" id="csvFileInput" accept=".csv,.xlsx" class="hidden" onchange="importFromFile(event)" />
       </label>
       <button onclick="exportToExcel()" class="flex items-center gap-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 px-4 py-1.5 rounded-lg system-font text-xs uppercase transition-all">
@@ -626,30 +626,30 @@ function addToNotiList(message, colorClass = "text-white") {
   }
 
   // Simple export to Excel (using ExcelJS)
-  function exportToExcel() {
-    if (!allData.length) return showNotification("No data to export.");
-    showNotification("Generating Excel...");
+  // function exportToExcel() {
+  //   if (!allData.length) return showNotification("No data to export.");
+  //   showNotification("Generating Excel...");
 
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet("Registry");
+  //   const workbook = new ExcelJS.Workbook();
+  //   const worksheet = workbook.addWorksheet("Registry");
 
-    worksheet.columns = [
-      { header: "NO", key: "no", width: 5 },
-      ...FIELDS.map(field => ({ header: field.toUpperCase(), key: field, width: 20 }))
-    ];
+  //   worksheet.columns = [
+  //     { header: "NO", key: "no", width: 5 },
+  //     ...FIELDS.map(field => ({ header: field.toUpperCase(), key: field, width: 20 }))
+  //   ];
 
-    allData.forEach((item, i) => {
-      worksheet.addRow({ no: i+1, ...item });
-    });
+  //   allData.forEach((item, i) => {
+  //     worksheet.addRow({ no: i+1, ...item });
+  //   });
 
-    workbook.xlsx.writeBuffer().then(buffer => {
-      saveAs(new Blob([buffer]), `Registry_${new Date().toISOString().split('T')[0]}.xlsx`);
-      showNotification("Excel downloaded!");
-    }).catch(err => {
-      console.error(err);
-      showNotification("Export failed");
-    });
-  }
+  //   workbook.xlsx.writeBuffer().then(buffer => {
+  //     saveAs(new Blob([buffer]), `Registry_${new Date().toISOString().split('T')[0]}.xlsx`);
+  //     showNotification("Excel downloaded!");
+  //   }).catch(err => {
+  //     console.error(err);
+  //     showNotification("Export failed");
+  //   });
+  // }
 
   // Basic edit (placeholder - can expand later)
   async function toggleEdit(button) {
