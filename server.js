@@ -183,7 +183,24 @@ app.delete('/api/registry/:id', async (req, res) => {
     }
 });
 
+// API: Update single entry
+app.put('/api/registry/:timestamp', async (req, res) => {
+  try {
+    const { timestamp } = req.params;
+    const data = req.body;
+    const fields = Object.keys(data).filter(key => key !== 'timestamp');
+    const setClause = fields.map((key, index) => `"${key}" = $${index + 1}`).join(', ');
+    const values = fields.map(key => data[key]);
+    values.push(timestamp);
 
+    const query = `UPDATE registry SET ${setClause} WHERE timestamp = $${values.length}`;
+    await pool.query(query, values);
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Update failed' });
+  }
+});
 
 // API: Delete all
 app.delete('/api/registry', async (req, res) => {

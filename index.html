@@ -652,9 +652,48 @@ function addToNotiList(message, colorClass = "text-white") {
   }
 
   // Basic edit (placeholder - can expand later)
-  function toggleEdit(btn) {
-    alert("Edit mode not fully implemented yet. Coming soon!");
+  async function toggleEdit(button) {
+  const row = button.closest("tr");
+  const isEditing = button.dataset.editing === "true";
+  const id = row.dataset.id; // ទាញយក timestamp
+
+  if (!isEditing) {
+    // ចាប់ផ្ដើមកែ៖ ប្ដូរ Cell នីមួយៗទៅជា Input
+    // រំលង Cell ទី ០ (លេខរៀង) និង Cell ចុងក្រោយ (ប៊ូតុង)
+    for (let i = 1; i < row.cells.length - 1; i++) {
+      const cell = row.cells[i];
+      const originalValue = cell.textContent === "-" ? "" : cell.textContent;
+      cell.innerHTML = `<input type="text" class="bg-slate-700 text-white border border-blue-500 rounded px-2 py-1 w-full" value="${originalValue}">`;
+    }
+    button.innerHTML = '<i class="fas fa-check text-green-400"></i>'; // ប្ដូរ Icon ទៅជាសញ្ញាគ្រីស
+    button.dataset.editing = "true";
+  } else {
+    // រក្សាទុកការកែប្រែ៖ ប្រមូលទិន្នន័យពី Input
+    const updatedData = {};
+    const inputs = row.querySelectorAll("input");
+    
+    // ចាប់យកតម្លៃតាមលំដាប់លំដោយ FIELDS ដែលបងមាន
+    FIELDS.forEach((field, index) => {
+      updatedData[field] = inputs[index].value.trim();
+    });
+
+    try {
+      const res = await fetch(`/api/registry/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData)
+      });
+
+      if (res.ok) {
+        showNotification("បានរក្សាទុកការកែប្រែ");
+        loadFromAPI(); // Refresh តារាងដើម្បីបង្ហាញទិន្នន័យថ្មី
+      }
+    } catch (err) {
+      console.error(err);
+      showNotification("កែប្រែមិនបានជោគជ័យ");
+    }
   }
+}
 
   // Basic remove
   async function removeRow(button) {
